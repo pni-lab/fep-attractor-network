@@ -1,0 +1,7 @@
+_build
+.venv
+.vscode
+.DS_Store
+classes_network_state.png
+parameter_search_results.pkl
+performance_results.pkl

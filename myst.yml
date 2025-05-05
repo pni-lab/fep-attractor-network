@@ -1,0 +1,30 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  title: "Attractor neural networks and active inference"
+  short_title: "Attractor networks and active inference"
+  keywords: []
+  license: CC-BY-4.0
+  github: https://github.com/pni-lab/ghost-in-the-machine
+  authors:
+    - name: Tamas Spisak
+      affiliations:
+        - Center for Translational Neuro- and Behavioral Sciences (C-TNBS), University Medicine Essen, Germany
+      orcid: 0000-0002-2942-0821
+      email: tamas.spisak@uk-essen.de
+      corresponding: True
+    - name: Karl Friston
+      affiliations:
+        - Wellcome Trust Centre for Neuroimaging, Institute of Neurology, University College London, UK
+        - VERSES AI Research Lab, Los Angeles, CA, 90016, USA
+      orcid: 0000-0001-7984-8909
+  # bibliography: []
+site:
+  template: article-theme
+  # title:
+  # logo:
+  nav: []
+  actions:
+    - title: Predictive Neuroscience Lab
+      url: https://pni-lab.github.io/
+  domains: []
