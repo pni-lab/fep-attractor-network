@@ -311,6 +311,9 @@ def orthogonality(data, attractors, plot=True):
         axes[1].set_xlim(0, np.pi)  # Only show the upper half of the circle
         plt.show()
 
+        print('Data: mean', angles_data.mean(), 'std', angles_data.std(), 'median', angles_data.median())
+        print('Attractors: mean', angles_attractors.mean(), 'std', angles_attractors.std(), 'median', angles_attractors.median())
+
     return angles_data, angles_attractors
 
 
@@ -485,10 +488,13 @@ def report_network_evaluation(training_output,
     print("* Orthogonality")
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(8, 3))
     r_data = np.corrcoef(train_data)
+    print('Data correlation: mean', r_data.mean(), 'std', r_data.std(), 'median', r_data.median())
     sns.histplot(r_data[np.triu_indices_from(r_data, k=1)], ax=axes[0])
     r_attractors = np.corrcoef(attractors)
+    print('Attractors correlation: mean', r_attractors.mean(), 'std', r_attractors.std(), 'median', r_attractors.median())
     sns.histplot(r_attractors[np.triu_indices_from(r_attractors, k=1)], ax=axes[1])
     plt.show()
+
     orthogonality(train_data, np.array(attractors))
 
         
