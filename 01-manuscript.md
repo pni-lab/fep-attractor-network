@@ -413,16 +413,18 @@ Our python implementation of the network, available at {cite:t}`https://github.c
 
 
 
-:::{figure} fig/results.png
-:name: fig-digits
+:::{figure} fig/sequence-attractors.png
+:name: fig-sequence-attractors
 :align: center
 :width: 100%
-**Consequences of the proposed framework**
-**A** Ring attractors represented by cosine basis functions in an equivalent two-layer network. \
-**B** Predictive coding implemented by an attractor network. \
-**C** Bayesian causal inference implemented by an attractor network. \
-**D** Large-scale brain attractors from {cite:t}`https://doi.org/10.7554/eLife.98725.1` \
-**E** Large-scale brain attractors are close to orthogonal to each other.
+caption
+:::
+
+:::{figure} fig/catastrophic-forgetting.png
+:name: fig-catastrophic-forgetting
+:align: center
+:width: 60%
+caption
 :::
 
 # Discussion
