@@ -1,7 +1,7 @@
 # See docs at: https://mystmd.org/guide/frontmatter
 version: 1
 project:
-  title: "Attractor neural networks and active inference"
+  title: "Self-orthogonalizing attractor neural networks emerging from the free energy principle"
   short_title: "Attractor networks and active inference"
   keywords: []
   license: CC-BY-4.0
