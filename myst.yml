@@ -5,7 +5,7 @@ project:
   short_title: "Attractor networks and active inference"
   keywords: []
   license: CC-BY-4.0
-  github: https://github.com/pni-lab/ghost-in-the-machine
+  github: https://github.com/pni-lab/fep-attractor-network
   authors:
     - name: Tamas Spisak
       affiliations:
