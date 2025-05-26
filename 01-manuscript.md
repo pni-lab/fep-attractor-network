@@ -219,7 +219,7 @@ P(\bm{\sigma}) \propto \exp \Biggl\{ \underbrace{\underbrace{\sum_{i} b_i \sigma
 }
 :::
 
-with $J^{\dagger}_{ij} = \frac{1}{2} (J_{ij} + J_{ji})$ and $J^{\dagger}_{ii} = 0$ for all $i,j$. 
+with $\bm{J}^{\dagger} = \frac{1}{2} (\bm{J} + \bm{J}^\intercal)$ (meaning that the diagonal elements $J^{\dagger}_{ii} = 0$ for all $i$). 
 
 This joint probability distribution takes the functional form of a stochastic continuous-state Hopfield network (a specific type of Boltzmann machines).  As known in such systems, regions of high probability density in this stationary distribution will constitute "stochastic attractors", which are the regions of the state space that the system will tend to converge to. Furthermore, in case of asymmetric couplings, the antisymmetric part of the coupling matrix induces "solenoidal flows", extending the attractor repertoire with "sequence attractors" (heteroclinic chains).
 Importantly, our derivation shows that, while solenoidal flows that emerge with asymmetric couplings can break detailed balance and induce non-equilibrium dynamics (sequence attractors, heteroclinic chains), the stationary distribution retains a Boltzmann-like form determined by the symmetric part $\bm{J}^{\dagger}$. This relies on the assumption that the solenoidal flows are divergence-free when weighted by the stationary probability density, a condition argued to hold for conservative particles under a particular partition (see [](#Appendix-5) and {cite:p}`https://doi.org/10.1016/j.plrev.2023.08.016`; but also {cite:t}`10.1088/0305-4470/37/3/L01`; {cite:t}`https://doi.org/10.1088/1751-8113/43/37/375003`). Under this condition, the antisymmetric part of the coupling acts only tangentially to the iso-potential surfaces defined by the symmetric part and, therefore, does not alter the form of the stationary distribution, merely driving probability fluxes along these surfaces. While not a universal feature of all NESS systems, this property is posited to arise in FEP-constrained systems due to the interplay of the Markov blanket and other assumptions like conservative dynamics.
@@ -349,7 +349,7 @@ This acts to cancel out the contribution of overlaps between different stored pa
 
 :::{math}
 \boxed{
-\langle \boldsymbol{\sigma}^{(p)}, \boldsymbol{\sigma}^{(q)} \rangle \to 0\quad \text{for} \quad p\neq q.
+\langle \boldsymbol{\sigma}^{(\mu_1)}, \boldsymbol{\sigma}^{(\mu_2)} \rangle \to 0\quad \text{for} \quad \mu_1\neq \mu_2.
 }
 :::
 
