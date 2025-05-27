@@ -343,43 +343,28 @@ A key feature of this rule is its resemblance to Sanger's rule {cite:p}`https://
 
 ## Emergence of approximately orthogonal attractors
 
-A key consequence of the continuous VFE minimization guiding the network's learning and inference is the emergence of approximately orthogonal attractor states. This tendency towards orthogonality is not an ad-hoc feature but a fundamental outcome of the pressure to find an optimal balance between predictive accuracy and model complexity, inherent in the FEP.
+A key consequence of Variational Free Energy (VFE) minimization is the emergence of approximately orthogonal attractor states. This arises from the Free Energy Principle's (FEP) imperative to balance predictive accuracy (maximizing information about external causes) with model complexity (minimizing redundancy among internal representations).
 
-Minimizing model complexity implies that the system should find the most parsimonious representations of the patterns it encounters. If learned attractor states (representing memories or concepts) are non-orthogonal, they contain redundant information – the state of one attractor provides some predictability about another. Orthogonal representations, by contrast, are maximally distinct. From an information-theoretic perspective, this drive for efficiency translates into **minimizing redundancy** among its internal representations (the attractor states), ensuring that each attractor distinctly represents different underlying causes or patterns. This minimization of redundancy between any two distinct attractor patterns, $\boldsymbol{\sigma}^{(\mu^1)}$ and $\boldsymbol{\sigma}^{(\mu^2)}$, can be expressed as minimizing their mutual information:
-
+Minimizing model complexity, a component of VFE minimization, translates to minimizing the mutual information between distinct attractor patterns, $\boldsymbol{\sigma}^{(\mu^1)}$ and $\boldsymbol{\sigma}^{(\mu^2)}$:
 :::{math}
 :label: eq-min-mutual-info-attractors
 \min_{\forall \mu^1 \neq \mu^2} I(\boldsymbol{\sigma}^{(\mu^1)}; \boldsymbol{\sigma}^{(\mu^2)}) = \min_{\forall \mu^1 \neq \mu^2} D_{KL}\left(p(\boldsymbol{\sigma}^{(\mu^1)}, \boldsymbol{\sigma}^{(\mu^2)}) || p(\boldsymbol{\sigma}^{(\mu^1)})p(\boldsymbol{\sigma}^{(\mu^2)})\right)
 :::
 
-Achieving $I(\boldsymbol{\sigma}^{(\mu^1)}; \boldsymbol{\sigma}^{(\mu^2)}) \to 0$ implies statistical independence, i.e., $p(\boldsymbol{\sigma}^{(\mu^1)}, \boldsymbol{\sigma}^{(\mu^2)}) \to p(\boldsymbol{\sigma}^{(\mu^1)})p(\boldsymbol{\sigma}^{(\mu^2)})$. For pattern components $\sigma_i$ that are (or become through learning) approximately zero-mean (e.g., under unbiased priors or due to balanced excitatory/inhibitory influences), this independence leads to an expectation of zero covariance, and thus a vanishing inner product: $\mathbb{E}[\langle \boldsymbol{\sigma}^{(\mu^1)}, \boldsymbol{\sigma}^{(\mu^2)} \rangle] \to 0$. The learning dynamics described in eq. [](#learning-rule) then act to instantiate this principle by driving the actual inner products of learned attractor instances towards zero.
-
-Concurrently, the overarching goal of **minimizing expected free energy** (which is equivalent to **maximizing mutual information** or expected information gain between the model's internal states $\boldsymbol{\sigma}$ and the external causes $\boldsymbol{\eta}$ or sensory states $\mathbf{s}$) ensures that these emerging orthogonal attractors collectively and efficiently capture the relevant structure of the input space. This objective can be written as:
-
+Simultaneously, maximizing predictive accuracy (or minimizing surprise) involves maximizing the mutual information between the model's internal states $\boldsymbol{\sigma}$ and external causes $\boldsymbol{\eta}$ (or sensory states $\mathbf{s}$):
 :::{math}
 :label: eq-max-info-gain-env
 \max I(\boldsymbol{\sigma}; \boldsymbol{\eta}) \quad (\text{or } \max I(\boldsymbol{\sigma}; \mathbf{s}))
 :::
+This ensures the emerging orthogonal attractors are maximally informative about the environment {cite:p}`https://doi.org/10.1016/j.plrev.2023.08.016`.
 
-Thus, the system seeks representations that are both internally non-redundant (leading to orthogonality) and externally informative. This principle is particularly salient for conservative particles, where maintaining conditional independence and minimizing expected free energy intrinsically favors such efficient internal models {cite:p}`https://doi.org/10.1016/j.plrev.2023.08.016`.
+The learning rule (eq. [](#learning-rule)) mechanistically instantiates this optimization:
+$ \Delta J_{ij} \propto \sigma_i \sigma_j - L(b_i + \sum_{k\neq i} J_{ik}\,\sigma_k ) \sigma_j = (\sigma_i - \hat{\sigma}_i) \sigma_j $
+where $\hat{\sigma}_i = L(b_i + \sum_{k\neq i} J_{ik}\,\sigma_k)$ is the network's prediction of $\sigma_i$ given the current input and weights. This rule adjusts $J_{ij}$ to reduce the prediction error $\epsilon_i = \sigma_i - \hat{\sigma}_i$.
+The Hebbian component ($\sigma_i \sigma_j$) stores patterns, while the anti-Hebbian component ($- \hat{\sigma}_i \sigma_j$) refines these representations. If the prediction $\hat{\sigma}_i$ for a target pattern $\boldsymbol{\sigma}^{(\text{target})}$ is 'contaminated' by components of other stored patterns (due to non-orthogonalities in $J_{ij}$ from previous learning, leading to interference {cite:p}`10.1103/physreva.35.380`), the learning rule $\Delta J_{ij} \propto (\sigma_i^{(\text{target})} - \hat{\sigma}_i) \sigma_j^{(\text{target})}$ adjusts $J_{ij}$ to minimize this cross-pattern influence.
+Repeated application of this rule during learning progressively decorrelates the neural activities associated with different patterns. This process is analogous to online orthogonalization procedures (e.g., Sanger's rule for PCA {cite:p}`https://doi.org/10.1016/0893-6080(89)90044-0`), driving the learned representations of attractors $\{\boldsymbol{\sigma}^{(\mu)}\}$ towards orthogonality.
 
-The learning rule derived in eq. [](#learning-rule) provides the specific mechanism through which the network achieves this representational optimization by adjusting its coupling weights. The following discussion details how its Hebbian and anti-Hebbian components interact to progressively orthogonalize attractor states.
-
-Let us assume that the network stores $\Mu$ patterns (has $\Mu$ attractors): $\{\boldsymbol{\sigma}^{(\mu)}\}_\mu=1^\Mu$. In this case, the Hebbian term builds the weight matrix as:
-
-:::{math}
-J_{ij} \sim \sum_{\mu=1}^{\Mu} \sigma_i^{(\mu)} \sigma_j^{(\mu)}.
-:::
-
-For two different patterns, the inner product (overlap) between distinct patterns
-$O_{\mu_1 \mu_2} = \sum_{i} \sigma_i^{(\mu_1)}\sigma_i^{(\mu_2)} \quad (\mu_1 \neq \mu_2)$ may be nonzero, leading to interference. 
-The consequences of this are well known in case of deterministic Hopfield networks: the network will tend to retrieve the wrong pattern (spurious attractor state), or a superposition of patterns, instead of the intended one {cite:p}`10.1103/physreva.35.380 `.
-To see how the predictive (anti-Hebbian) term in eq. [](#learning-rule) cancels the contribution of overlaps between different stored patterns, let us consider that the network is presented with pattern \(\boldsymbol{\sigma}^{(\mu_2)}\), which overlaps with another, previously learned pattern \(\boldsymbol{\sigma}^{(\mu_1)}\).
-In this case, the current weights together with a sufficient amount of stochasticity - as the network progresses towards the previously learned attractor - will tend to partially "explain out" this overlap through the anti-Hebbian term. 
-This acts to cancel out the contribution of overlaps between different stored patterns. Under repeated updates - i.e., gradient descent on the variational free energy - this cancellation progressively reduces the interference between stored patterns by ensuring their representations become more distinct, effectively driving their overlaps towards zero. This is the process by which the learning rule (eq. [](#learning-rule)) instantiates the FEP-driven emergence of approximately orthogonal attractors, as discussed above.
-
-Thus, the attractor states become approximately orthogonal. This, however, raises the question, how the system can match the orthogonalized attractor it tends to converge to with the original, non-orthogonal pattern - a key requirement to function as an associative memory.
-In the next section, we show that this is only a problem with deterministic dynamics. In the stochastic case, the network - by means of multistability - can be in a superposition of different random attractor states, and thereby retrieve the original (non-orthogonal) pattern as a combination of the orthogonal bases represented by the attractors. We show, further, that as the derived system - in case of symmetric couplings - is equivalent to Boltzmann machines (without hidden units), this stochastic retrieval can be interpreted as an approximate Bayesian inference at the macro-scale, performed by the entire network.
+Consequently, the learning dynamics drive the attractor states towards approximate orthogonality. This enhances representational efficiency but raises the question of how the network retrieves original, potentially non-orthogonal patterns. As discussed next, stochastic dynamics enable the network to address this by combining these orthogonal bases.
 
 ## Stochastic retrieval as macro-scale Bayesian inference
 
