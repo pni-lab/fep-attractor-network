@@ -8,7 +8,12 @@ project:
   github: https://github.com/pni-lab/fep-attractor-network
   toc:
     - file: 01-manuscript.md
-    - file: 02-appendix.md
+    - file: 02-appendix.ipynb
+    - file: 03-simulation-demo.ipynb
+    - file: 04-simulation-digits.ipynb
+    - file: 05-simulation-digits-continuous-sequence.ipynb
+    - file: 06-simulation-digits-continuous-catastrophic-forgetting.ipynb
+    - file: 07-uml.ipynb
   authors:
     - name: Tamas Spisak
       affiliations:
