@@ -3,9 +3,12 @@ version: 1
 project:
   title: "Self-orthogonalizing attractor neural networks emerging from the free energy principle"
   short_title: "Attractor networks and active inference"
-  keywords: []
+  keywords: [attractor networks, free energy principle, active inference, orthogonal representations, self-organization]
   license: CC-BY-4.0
   github: https://github.com/pni-lab/fep-attractor-network
+  toc:
+    - file: 01-manuscript.md
+    - file: 02-appendix.md
   authors:
     - name: Tamas Spisak
       affiliations:
@@ -15,8 +18,8 @@ project:
       corresponding: True
     - name: Karl Friston
       affiliations:
-        - Wellcome Trust Centre for Neuroimaging, Institute of Neurology, University College London, UK
-        - VERSES AI Research Lab, Los Angeles, CA, 90016, USA
+        - Queen Square Institute of Neurology, University College London, WC1N 3AR, UK
+        - VERSES, Los Angeles, CA 90067, USA
       orcid: 0000-0001-7984-8909
   # bibliography: []
 site:
