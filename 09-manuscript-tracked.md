@@ -331,7 +331,7 @@ This reveals the potential for a deep recursive application of the Free Energy P
 **D** Thanks to its orthogonal attractor representation, the network is able to generalize to new patterns - as long as they are sampled from the sub-space spanned by the attractors - by combining the quasi-orthogonal attractor states (bottom right) by multistable stochastic dynamics during the MCMC sampling. 
 :::
 
-<span style="color: green;">## Non-equilibrium steady state</span>
+## <span style="color: green;">Non-equilibrium steady state</span>
 
 <span style="color: green;">We now turn from the local update rules to the global steady-state behaviour of the network. The coupling matrix can always be decomposed as</span> $\bm{J} = \bm{J}^{\dagger} + \bm{J}^-$, <span style="color: green;">where</span> $\bm{J}^{\dagger} = \frac{1}{2}(\bm{J} + \bm{J}^\intercal)$ <span style="color: green;">is symmetric and</span> $\bm{J}^- = \frac{1}{2}(\bm{J} - \bm{J}^\intercal)$ <span style="color: green;">is antisymmetric. We consider these two components in turn.</span>
 
