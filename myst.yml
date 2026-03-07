@@ -31,7 +31,8 @@ project:
         - Queen Square Institute of Neurology, University College London, WC1N 3AR, UK
         - VERSES, Los Angeles, CA 90067, USA
       orcid: 0000-0001-7984-8909
-  # bibliography: []
+  bibliography:
+    - references.bib
 site:
   template: article-theme
   # title:

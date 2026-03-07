@@ -1,4 +1,22 @@
-# Rebuttal letter
+---
+title: "Rebuttal letter"
+exports:
+  - format: docx
+    output: autoconvert-rebuttal-letter.docx
+  - format: pdf
+    output: autoconvert-rebuttal-letter.pdf
+  - format: tex
+    template: arxiv_nips
+    output: latex/rebuttal_letter
+
+abbreviations:
+  FEP: Free Energy Principle
+  VFE: Variational Free Energy
+  NESS: Non-Equilibrium Steady-State
+  RNN: Recurrent Neural Network
+
+---
+
 
 ## *Manuscript NEUCOM-D-25-06426*
 

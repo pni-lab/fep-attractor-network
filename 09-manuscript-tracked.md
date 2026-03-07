@@ -2,12 +2,12 @@
 title: "Self-orthogonalizing attractor neural networks emerging from the free energy principle"
 exports:
   - format: docx
-    output: autoconvert-attractor-math-manuscript.docx
+    output: autoconvert-attractor-math-manuscript-tracked.docx
   - format: pdf
-    output: autoconvert-attractor-math-manuscript.pdf
+    output: autoconvert-attractor-math-manuscript-tracked.pdf
   - format: tex
     template: arxiv_nips
-    output: latex/autoconvert-attractor-math-manuscript
+    output: latex/autoconvert-attractor-math-manuscript-tracked
 
 abbreviations:
   FEP: Free Energy Principle
