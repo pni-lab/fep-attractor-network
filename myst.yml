@@ -9,11 +9,15 @@ project:
   toc:
     - file: 01-manuscript.md
     - file: 02-appendix.ipynb
+    - file: 02-appendix2.md
     - file: 03-simulation-demo.ipynb
     - file: 04-simulation-digits.ipynb
     - file: 05-simulation-digits-continuous-sequence.ipynb
     - file: 06-simulation-digits-catastrophic-forgetting.ipynb
-    - file: 07-uml.ipynb
+    - file: 07-simulation-scaling-jax.ipynb
+    - file: 08-simulation-faces-jax.ipynb
+    - file: rebuttal_letter.md
+    - file: 09-manuscript-tracked.md
   authors:
     - name: Tamas Spisak
       affiliations:
