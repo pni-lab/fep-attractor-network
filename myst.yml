@@ -16,7 +16,6 @@ project:
     - file: 06-simulation-digits-catastrophic-forgetting.ipynb
     - file: 07-simulation-scaling-jax.ipynb
     - file: 08-simulation-faces-jax.ipynb
-    - file: rebuttal_letter.md
     - file: 09-manuscript-tracked.md
   authors:
     - name: Tamas Spisak
