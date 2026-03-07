@@ -40,13 +40,16 @@ def preprocess_digits_data(digits):
 
     train_data = data[:10]
     test_data = data[10:]
+    
+    train_data = torch.from_numpy(train_data).double()
+    test_data = torch.from_numpy(test_data).double()
 
     # visualize
     fig, axes = plt.subplots(nrows=10, ncols=10, figsize=(10, 10))
     axes = axes.flatten()
     for i, ax in enumerate(axes):
         if i < train_data.shape[0]:
-            image = train_data[i].reshape(8, 8) + np.random.normal(0, 0.1, (8,8)) 
+            image = train_data[i].reshape(8, 8) + torch.normal(0, 0.1, (8,8))
 
             for j in range(image.shape[0]):
                 for k in range(image.shape[1]):
@@ -58,16 +61,16 @@ def preprocess_digits_data(digits):
             ax.set_visible(False)
     plt.show()
     plt.figure(figsize=(3, 3))
-    sns.histplot(train_data.flatten())
+    sns.histplot(train_data.flatten().numpy())
 
     return train_data, test_data
 
 
-def continous_inference_and_learning(nw, 
-                                     data, 
-                                     inverse_temperature=1, 
-                                     learning_rate=0.001, 
-                                     num_steps=100):
+def continous_inference_and_learning(nw: EfficientAttractorNetwork, 
+                                     data: torch.Tensor, 
+                                     inverse_temperature: float = 1.0, 
+                                     learning_rate: float = 0.001, 
+                                     num_steps: int = 100):
     """
     Wrapper function to continuous inference and learning
 
@@ -75,45 +78,46 @@ def continous_inference_and_learning(nw,
     Note that training and inference happens simultaneously in this architecture.
 
     Args:
-        nw: AttractorNetwork instance
-        data: numpy array of shape (num_nodes,)
+        nw: EfficientAttractorNetwork instance
+        data: torch.Tensor of shape (num_nodes,)
         inverse_temperature: controls the temperature during the state activation update
         learning_rate: controls the step size of the weight updates
         num_steps: controls the number of steps in the current epoch (with the same pattern)
     """
-
+    
     weight_change = [] # how much has the weight matrix changed
-    prev_J = nw.get_J()
+    prev_J = nw.get_J().clone()
 
-    for i, node in enumerate(nw.sigmas):
-        node.bias = data[i] # put in the data as biases (e.g. external sensory drive or internal computations)
+    # put in the data as biases (e.g. external sensory drive or internal computations)
+    nw.biases.data = data.to(nw.J.device)
 
     activations = []
     vfe = []
-    accuracy     = []
+    accuracy = []
     complexity = []
     for i in range(num_steps):
         nw.update(inverse_temperature=inverse_temperature, learning_rate=learning_rate, least_action=False)
-        activations.append([node.activation for node in nw.sigmas])
-        weight_change.append( np.sum(np.power(nw.get_J() - prev_J, 2)))
-        prev_J = nw.get_J()
+        activations.append(nw.activations.cpu().clone())
+        weight_change.append(torch.sum(torch.pow(nw.get_J() - prev_J, 2)).item())
+        prev_J = nw.get_J().clone()
         accuracy.append(nw.accuracy())
         complexity.append(nw.complexity())
         vfe.append(complexity[-1] - accuracy[-1]) # also available as nw.vfe()
 
     # clean up the network, just in case
-    for i, node in enumerate(nw.sigmas):
-        node.bias = 0
+    nw.biases.data.zero_()
 
     return activations, weight_change, accuracy, complexity, vfe
 
 
-def run_network(data, evidence_level, 
-                inverse_temperature, 
-                learning_rate,
-                num_epochs, 
-                num_steps,
-                progress_bar=True):
+def run_network(data: torch.Tensor, 
+                evidence_level: float, 
+                inverse_temperature: float, 
+                learning_rate: float,
+                num_epochs: int, 
+                num_steps: int,
+                progress_bar: bool = True,
+                device: str = 'cpu'):
     """
     Main function to run the network
 
@@ -134,21 +138,26 @@ def run_network(data, evidence_level,
         - weight-change-curve
     """
     
-    data = data.copy()
-    data *= evidence_level
+    data = data.clone() * evidence_level
 
     # initialize empty network
-    nw = AttractorNetwork(np.zeros((data.shape[1], data.shape[1])), biases=np.zeros(data.shape[1]))
+    n_nodes = data.shape[1]
+    nw = EfficientAttractorNetwork(
+        J=torch.zeros((n_nodes, n_nodes), dtype=torch.float64), 
+        biases=torch.zeros(n_nodes, dtype=torch.float64)
+    ).to(device)
 
     weight_change = []
     pattern = []
     vfe = []
     accuracy = []
     complexity = []
+    
+    rng = np.random.default_rng()
 
     for i in tqdm(range(num_epochs), disable=not progress_bar):
         # select a pattern randomly
-        di = np.random.randint(0, data.shape[0])
+        di = rng.integers(0, data.shape[0])
         pattern.append(di)
         _, e, acc, comp, this_vfe = continous_inference_and_learning(
             nw, 
@@ -164,46 +173,59 @@ def run_network(data, evidence_level,
     return nw, weight_change, pattern, accuracy, complexity, vfe
 
 
-def evaluate_reconstruction_accuracy(nw, 
-                                     data, 
-                                     sample,
-                                     signal_strength,
-                                     num_trials, 
-                                     SNR, 
-                                     inverse_temperature, 
-                                     num_steps, 
-                                     plot=True):
+def evaluate_reconstruction_accuracy(nw: EfficientAttractorNetwork, 
+                                     data: torch.Tensor, 
+                                     sample: bool,
+                                     signal_strength: float,
+                                     num_trials: int, 
+                                     SNR: float, 
+                                     inverse_temperature: float, 
+                                     num_steps: int, 
+                                     plot: bool = True):
     """
     Helper function to evaluate reconstruction accuracy
     """
     r2_test_original = []
     r2_reconstructed_original = []
+    
+    device = nw.J.device
+    data = data.to(device)
+    rng = np.random.default_rng()
+
 
     if plot:
         fig, axes = plt.subplots(nrows=3, ncols=10, figsize=(10, 3))
     
     for i in tqdm(range(num_trials), disable=not plot):
         if sample:
-            idx = np.random.randint(0, data.shape[0])
+            idx = rng.integers(0, data.shape[0])
         else:
             idx = i % data.shape[0]
             
         original_pattern = data[idx] * signal_strength
-        test_pattern = original_pattern + np.random.normal(0, original_pattern.std()/SNR, data[0].shape)
+        noise = torch.normal(0, original_pattern.std()/SNR, original_pattern.shape, device=device)
+        test_pattern = original_pattern + noise
+        
         acts, _, _, _, _ = continous_inference_and_learning(nw, data=test_pattern, 
                                                             inverse_temperature=inverse_temperature, 
                                                             learning_rate=0.0, 
                                                             num_steps=num_steps)
-        mean_activity = np.mean(acts, axis=0)
-        r2_test_original.append(np.round(np.corrcoef(test_pattern, original_pattern)[0, 1]**2, 3))
-        r2_reconstructed_original.append(np.round(np.corrcoef(mean_activity, original_pattern)[0, 1]**2, 3))
+        
+        mean_activity = torch.mean(torch.stack(acts), axis=0)
+        
+        test_pattern_np = test_pattern.cpu().numpy()
+        original_pattern_np = original_pattern.cpu().numpy()
+        mean_activity_np = mean_activity.cpu().numpy()
+        
+        r2_test_original.append(np.round(np.corrcoef(test_pattern_np, original_pattern_np)[0, 1]**2, 3))
+        r2_reconstructed_original.append(np.round(np.corrcoef(mean_activity_np, original_pattern_np)[0, 1]**2, 3))
 
         if plot and i < 10:
-            axes[0, i].imshow(test_pattern.reshape(8, 8), cmap="gray")
+            axes[0, i].imshow(test_pattern_np.reshape(8, 8), cmap="gray")
             axes[0, i].set_axis_off()
-            axes[1, i].imshow(mean_activity.reshape(8, 8), cmap="gray")
+            axes[1, i].imshow(mean_activity_np.reshape(8, 8), cmap="gray")
             axes[1, i].set_axis_off()
-            axes[2, i].imshow(original_pattern.reshape(8, 8), cmap="gray")
+            axes[2, i].imshow(original_pattern_np.reshape(8, 8), cmap="gray")
             axes[2, i].set_axis_off()
     if plot:
         plt.show()
@@ -218,7 +240,8 @@ def evaluate_reconstruction_accuracy(nw,
         plt.show()
 
         plt.figure(figsize=(10, 1))
-        sns.lineplot(np.array(acts), legend=False, linestyle='-', alpha=0.5, linewidth = 1, palette='Spectral')
+        acts_np = torch.stack(acts).numpy()
+        sns.lineplot(acts_np, legend=False, linestyle='-', alpha=0.5, linewidth = 1, palette='Spectral')
         plt.show()
 
     return r2_test_original, r2_reconstructed_original
@@ -227,15 +250,18 @@ def vfe(nw, acts):
     """
     Small helper function to compute the VFE.
     """
-    for i, node in enumerate(nw.sigmas):
-        node.activation = float(acts[i])
-    #return np.round( nw.expected_energy() - nw.entropy(), 8 )
+    nw.activations = torch.tensor(acts, dtype=torch.float64, device=nw.J.device)
     return np.round( nw.vfe(), 4 )
 
-def get_deterministic_attractors(nw, data, 
+def get_deterministic_attractors(nw: EfficientAttractorNetwork,
+                                 data: torch.Tensor, 
                                  noise_levels=(0.0, 0.1, 0.2, 0.5),
                                  inverse_temperature=1,
                                  plot=True):
+    
+    device = nw.J.device
+    data = data.to(device)
+    all_attractors = []
 
     for noise in noise_levels:
         attractors = []
@@ -243,37 +269,48 @@ def get_deterministic_attractors(nw, data,
             fig, axes = plt.subplots(2, data.shape[0], figsize=(20, 4))
             print(f"  ** Noise: {noise}")
         for i in tqdm(range(data.shape[0]), disable=not plot):
-            rng=np.random.default_rng(None)
-            nw_relax = AttractorNetwork(nw.get_J(), biases = np.zeros(nw.get_J().shape[0]), rng=rng)
-            noisy_input = np.copy(data[i]) * 0.1 + rng.normal(0, 0.1*noise*data[i].std(), data.shape[1]) 
-            noisy_input = np.array([Langevin(x) for x in noisy_input])
-            attractor, steps = relax(nw_relax, input=noisy_input, bias=np.zeros(nw.get_J().shape[0]),
-                                inverse_temperature=inverse_temperature, least_action=True, max_steps=1000, tol=1e-12)
             
-            #print("* noisy_Q", vfe(nw, noisy_Q))
-            vfe_noisy = vfe(nw, noisy_input)
-            #print("* attractor", vfe(nw, attractor))
-            vfe_result = vfe(nw, attractor)
-
-            #print(steps)
-            attractors.append(attractor)
-            # plot
-            if plot:
-                axes[0, i].imshow(noisy_input.reshape(8, 8), cmap='gray_r')
-                axes[0, i].set_title(f'{vfe_noisy}, ({steps})')
-                axes[0, i].set_xticks([])
-                axes[0, i].set_yticks([])
-                axes[0, i].set_axis_off()   
-
-                axes[1, i].imshow(attractor.reshape(8, 8), cmap='gray_r')
-                axes[1, i].set_title(f'{vfe_result}, ({steps})')
-                axes[1, i].set_xticks([])
-                axes[1, i].set_yticks([])
-                axes[1, i].set_axis_off()
+            rng = torch.Generator(device=device)
+            
+            nw_relax = EfficientAttractorNetwork(nw.get_J(), biases = torch.zeros(nw.get_J().shape[0], device=device, dtype=torch.float64), rng=rng)
+            
+            noisy_input = data[i].clone() * 0.1 + torch.normal(0, 0.1*noise*data[i].std(), data.shape[1], device=device)
+            noisy_input = Langevin(noisy_input)
+            
+            attractor, steps = relax(nw_relax, input=noisy_input, bias=torch.zeros(nw.get_J().shape[0], device=device, dtype=torch.float64),
+                                     inverse_temperature=inverse_temperature, least_action=True, max_steps=200)
+            
+            attractor_np = attractor.cpu().numpy()
+            
+            is_new = True
+            for at in attractors:
+                if np.corrcoef(attractor_np, at)[0,1] > 0.99:
+                    is_new = False
+            
+            if is_new:
+                attractors.append(attractor_np)
+                if plot:
+                    axes[0,i].imshow(noisy_input.cpu().numpy().reshape(int(np.sqrt(data.shape[1])), int(np.sqrt(data.shape[1]))), cmap='gray_r', vmin=-1, vmax=1)
+                    axes[0,i].set_title(f'Noisy input {i+1}')
+                    axes[0,i].set_axis_off()
+                    axes[1,i].imshow(attractor_np.reshape(int(np.sqrt(data.shape[1])), int(np.sqrt(data.shape[1]))), cmap='gray_r', vmin=-1, vmax=1)
+                    axes[1,i].set_title(f'Attractor {len(attractors)}')
+                    axes[1,i].set_axis_off()
         if plot:
             plt.show()
-
-    return attractors
+        all_attractors.append(np.array(attractors))
+        
+    all_attractors = np.vstack(all_attractors)
+    unique_attractors = []
+    for attractor in all_attractors:
+        is_new = True
+        for at in unique_attractors:
+            if np.corrcoef(attractor, at)[0,1] > 0.99:
+                is_new = False
+        if is_new:
+            unique_attractors.append(attractor)
+            
+    return np.array(unique_attractors)
 
 def angle_between(v1, v2):
     cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
@@ -367,7 +404,7 @@ def performance_metrics(training_output,
     
     num_attractors = len(np.unique(np.round(attractors, 2), axis=0))  # unique attractors, with tolerance of 0.01
 
-    orthogonality_data, orthogonality_attractors = orthogonality(train_data, attractors, plot=False)
+    orthogonality_data, orthogonality_attractors = orthogonality(train_data.cpu().numpy(), attractors, plot=False)
 
     # remove attractors that are counted multiple times
     orthogonality_attractors = orthogonality_attractors[orthogonality_attractors < 179]
@@ -388,116 +425,76 @@ def report_network_evaluation(training_output,
                               inverse_temperature_deterministic,
                               title="test run"):
     """
-    Report full network evaluation
+    Function to run the network, get attractors, and evaluate performance in a single pipeline.
 
-    A long function that creates a full report on the network's performance.
-    - plots the network weights
-    - plots vfe and co.
-    - evaluates retrieval accuracy
-    - evaluates 1-shot generalizability
-    - reconstructs attractors corresponding to the input data
-    - evaluates orthogonality of attractors
+    Args:
+        training_output: a tuple containing the output of the `run_network` function
+        evidence_level: the evidence level, scaling the input data
+        train_data: training data
+        test_data: testing data
+        params_retreival: dictionary of parameters for the `evaluate_reconstruction_accuracy` function
+        params_generalization: dictionary of parameters for the `evaluate_reconstruction_accuracy` function
+        inverse_temperature_deterministic: temperature for the deterministic attractor search
+        title: title for the report
     """
-
-    train_data = train_data.copy()
-    test_data = test_data.copy()
-    train_data *= evidence_level
-    test_data *= evidence_level
-
-    print("* Visualize training data")
-    fig, axes = plt.subplots(nrows=10, ncols=10, figsize=(10, 10))
-    axes = axes.flatten()
-    for i, ax in enumerate(axes):
-        if i < train_data.shape[0]:
-            image = train_data[i].reshape(8, 8) + np.random.normal(0, 0.1, (8,8)) 
-
-            for j in range(image.shape[0]):
-                for k in range(image.shape[1]):
-                    image[j, k] = Langevin(image[j, k])
-
-            ax.imshow(image, cmap="coolwarm", interpolation="nearest")
-            ax.set_axis_off()
-        else:
-            ax.set_visible(False)
-    plt.show()
-    plt.figure(figsize=(3, 3))
-    sns.histplot(train_data.flatten())
     
-    nw = training_output[0]
-    weight_change = training_output[1]
-    pattern = training_output[2]
-    accuracy = training_output[3]
-    complexity = training_output[4]
-    vfe = training_output[5]
+    # Unpack training output
+    nw, weight_change, pattern, accuracy, complexity, vfe = training_output
 
-    #print("* Plot network")
-    #plt.figure(figsize=(5, 5))
-    #training_output[0].plot_network(plot_bias=False)
-    #plt.show()
-    print("* Network weights",  f"({title})")
-    plt.figure(figsize=(5, 5))
-    sns.heatmap(nw.get_J(), cmap="coolwarm", center=0, square=True)
-    plt.show()
-    print("* Weight change", f"({title})")
-    plt.figure(figsize=(8, 2))
-    sns.lineplot(np.array(weight_change))
-    num_steps = len(weight_change) // len(pattern)
-    for i, pattern_label in enumerate(pattern):
-        plt.text(i*num_steps, max(weight_change[i*num_steps:i*num_steps+num_steps]), str(pattern_label), ha='center', va='bottom')
-    plt.show()
-    print("* Accuracy", f"({title})")
-    plt.figure(figsize=(4, 2))
-    sns.lineplot(np.array(accuracy), legend=False, linestyle='-', alpha=1, linewidth = 1)
-    plt.show()
-    print("* Complexity", f"({title})")
-    plt.figure(figsize=(4, 2))
-    sns.lineplot(np.array(complexity), legend=False, linestyle='-', alpha=1, linewidth = 1)
-    plt.show()
-    print("* VFE", f"({title})")
-    plt.figure(figsize=(4, 2))
-    sns.lineplot(vfe, legend=False, linestyle='-', alpha=0.2, linewidth = 1, color='blue')
-    # Calculate and plot smoothed VFE using a rolling window
-    # Assumes pandas (as pd) is imported and num_steps is defined
-    vfe_series = pd.Series(vfe)
-    window_size = 200
-    smoothed_vfe = vfe_series.rolling(window=window_size, center=True, min_periods=1).mean()
-    sns.lineplot(smoothed_vfe, legend=False, linestyle='-', alpha=1, linewidth=1.5, color='black')
-    plt.show()
-
-    print("* Retrieval accuracy", f"({title})")
-    evaluate_reconstruction_accuracy(nw, data=train_data, 
-                                     sample=False,
-                                     signal_strength=params_retreival["signal_strength"],
-                                     num_trials=params_retreival["num_trials"],
-                                     SNR=params_retreival["SNR"], 
-                                     inverse_temperature=params_retreival["inverse_temperature"], 
-                                     num_steps=params_retreival["num_steps"])
+    # Print title
+    print("#" * 50)
+    print(f"## {title}")
+    print("#" * 50)
     
-    print("* Generalization accuracy", f"({title})")
-    evaluate_reconstruction_accuracy(nw, data=test_data, 
-                                     sample=True,
-                                     signal_strength=params_generalization["signal_strength"],
-                                     num_trials=params_generalization["num_trials"],
-                                     SNR=params_generalization["SNR"], 
-                                     inverse_temperature=params_generalization["inverse_temperature"], 
-                                     num_steps=params_generalization["num_steps"])
+    # Get deterministic attractors from the trained network
+    attractors = get_deterministic_attractors(
+        nw, 
+        train_data, 
+        noise_levels=[0.0], 
+        inverse_temperature=inverse_temperature_deterministic, 
+        plot=True
+    )
     
-    print("* Attractors")
-    attractors = get_deterministic_attractors(nw, train_data, noise_levels=(0.0, 0.5), inverse_temperature=inverse_temperature_deterministic)
+    # Evaluate orthogonality of attractors
+    orthogonality(train_data.cpu().numpy(), attractors, plot=True)
 
-    print("* Orthogonality")
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(8, 3))
-    r_data = np.corrcoef(train_data)
-    print('Data correlation: mean', r_data.mean(), 'std', r_data.std(), 'median', r_data.median())
-    sns.histplot(r_data[np.triu_indices_from(r_data, k=1)], ax=axes[0])
-    r_attractors = np.corrcoef(attractors)
-    print('Attractors correlation: mean', r_attractors.mean(), 'std', r_attractors.std(), 'median', r_attractors.median())
-    sns.histplot(r_attractors[np.triu_indices_from(r_attractors, k=1)], ax=axes[1])
+    # Evaluate reconstruction accuracy on training data (retrieval)
+    print("\n" + "="*40)
+    print("  Evaluating reconstruction accuracy (retrieval)")
+    print("="*40)
+    evaluate_reconstruction_accuracy(
+        nw, 
+        data=train_data, 
+        **params_retreival
+    )
+
+    # Evaluate reconstruction accuracy on test data (generalization)
+    print("\n" + "="*40)
+    print("  Evaluating reconstruction accuracy (generalization)")
+    print("="*40)
+    evaluate_reconstruction_accuracy(
+        nw, 
+        data=test_data, 
+        **params_generalization
+    )
+
+    # Plot VFE curve
+    print("\n" + "="*40)
+    print("  VFE curve")
+    print("="*40)
+    plt.figure(figsize=(10, 3))
+    plt.plot(vfe)
     plt.show()
 
-    orthogonality(train_data, np.array(attractors))
-
-        
+    # Plot network graph
+    print("\n" + "="*40)
+    print("  Final network connectivity")
+    print("="*40)
+    nw.plot_network(symmetric=True, node_size=1, edge_width=0.5, plot_bias=False)
+    
+    print("\n" + "="*40)
+    print("  Report finished")
+    print("="*40)
 
 
             
