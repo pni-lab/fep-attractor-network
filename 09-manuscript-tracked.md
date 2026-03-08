@@ -1,5 +1,6 @@
 ---
 title: "Self-orthogonalizing attractor neural networks emerging from the free energy principle"
+short_title: "Revision: Changes Tracked"
 exports:
   - format: tex+pdf
     template: arxiv_nips
