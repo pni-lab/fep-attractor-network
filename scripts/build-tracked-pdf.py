@@ -133,6 +133,13 @@ def add_caption_package(tex: str) -> str:
     return tex.replace("\\begin{document}", "\\usepackage{caption}\n\\begin{document}", 1)
 
 
+def add_table_small_font(tex: str) -> str:
+    """Make font in table environments smaller: inject \\scriptsize after \\begin{table}."""
+    # Inject right after \begin{table} so it reliably applies (e.g. tables inside quote)
+    tex = re.sub(r"\\begin\{table\}(?!\\scriptsize)", r"\\begin{table}\\scriptsize", tex)
+    return tex
+
+
 # Two-figure block for fig-digits so the long caption is not cropped (\\ContinuedFloat keeps same figure number).
 FIG_DIGITS_TWO_FIGURES = r"""\begin{figure}[!htbp]
 \centering
@@ -185,6 +192,17 @@ SIMULATION_NOTEBOOKS = {
     "08-simulation-faces-jax.ipynb": (6, "simulation-faces-jax"),
 }
 SIMULATION_BASE_URL = "https://pni-lab.github.io/fep-attractor-network"
+APPENDIX_BASE_URL = "https://pni-lab.github.io/fep-attractor-network/appendix"
+
+
+def fix_appendix_refs(tex: str) -> str:
+    """Turn plain 'Appendix~N' text into links to the published appendix (e.g. #appendix-3)."""
+    for n in range(1, 10):
+        plain = f"Appendix~{n}"
+        url = f"{APPENDIX_BASE_URL}/#appendix-{n}"
+        linked = f"\\href{{{url}}}{{{plain}}}"
+        tex = tex.replace(plain, linked)
+    return tex
 
 
 def fix_notebook_hrefs(tex: str) -> str:
@@ -192,6 +210,52 @@ def fix_notebook_hrefs(tex: str) -> str:
     for filename, (num, slug) in SIMULATION_NOTEBOOKS.items():
         url = f"{SIMULATION_BASE_URL}/{slug}"
         tex = tex.replace(f"\\href{{{filename}}}{{}}", f"\\href{{{url}}}{{Simulation {num}}}")
+    return tex
+
+
+def add_line_numbers_for_tracked(tex: str) -> str:
+    """Add lineno package and \\linenumbers so the tracked manuscript PDF has line numbers."""
+    if "\\usepackage{lineno}" in tex:
+        return tex
+    tex = tex.replace("\\begin{document}", "\\usepackage{lineno}\n\\begin{document}", 1)
+    # Start line numbering from the first line of the body
+    tex = tex.replace("\\begin{document}\n", "\\begin{document}\n\\linenumbers\n", 1)
+    return tex
+
+
+def _strip_balanced_brace_block(tex: str, start: int, open_brace: int) -> tuple[str, int]:
+    """Return (content inside braces, position after closing brace). open_brace is the index of {."""
+    depth = 1
+    pos = open_brace + 1
+    while pos < len(tex) and depth > 0:
+        if tex[pos] == "{":
+            depth += 1
+        elif tex[pos] == "}":
+            depth -= 1
+        pos += 1
+    return tex[open_brace + 1 : pos - 1], pos
+
+
+def rebuttal_remove_section_numbers_keywords_author(tex: str) -> str:
+    """Remove section numbering, \\keywords, and \\author list from rebuttal letter .tex."""
+    # 1) Disable section numbering
+    if "\\setcounter{secnumdepth}{-1}" not in tex:
+        tex = tex.replace("\\begin{document}", "\\setcounter{secnumdepth}{-1}\n\\begin{document}", 1)
+    # 2) Remove \\author{...} (replace with empty author so \\maketitle still runs but shows no authors)
+    author_start = tex.find("\\author{")
+    if author_start != -1:
+        _, end = _strip_balanced_brace_block(tex, author_start, author_start + 7)  # 7 = len("\\author{") - 1, { at +7
+        tex = tex[: author_start] + "\\author{}" + tex[end:]
+    # 3) Remove \\keywords{...}
+    kw_start = tex.find("\\keywords{")
+    if kw_start != -1:
+        _, end = _strip_balanced_brace_block(tex, kw_start, kw_start + 9)
+        tex = tex[:kw_start] + tex[end:]
+    # 4) Remove pdfauthor and pdfkeywords from \hypersetup (so PDF metadata has no author/keywords)
+    tex = re.sub(r"pdfauthor=\{\\@author\},\s*\n?", "", tex)
+    tex = re.sub(r"pdfkeywords=\{[^}]*\},\s*\n?", "", tex)
+    # 5) Convert standalone \newline (from <br> in source) to paragraph break + vertical skip
+    tex = re.sub(r"^\s*\\newline\s*$", r"\\par\\vspace{0.8em}", tex, flags=re.MULTILINE)
     return tex
 
 
@@ -311,8 +375,14 @@ def build_one(source: Path) -> None:
     fixed = unescape_textcolor_in_tex(tex_content)
     fixed = apply_hypersetup(fixed)
     fixed = add_caption_package(fixed)
+    fixed = add_table_small_font(fixed)
     fixed = replace_fig_digits_with_continued_float(fixed)
     fixed = fix_notebook_hrefs(fixed)
+    fixed = fix_appendix_refs(fixed)
+    if source.name == "09-manuscript-tracked.md":
+        fixed = add_line_numbers_for_tracked(fixed)
+    if source.name == "rebuttal_letter.md":
+        fixed = rebuttal_remove_section_numbers_keywords_author(fixed)
     tex_path.write_text(fixed, encoding="utf-8")
 
     tex_dir = tex_path.parent
