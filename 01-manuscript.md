@@ -1,13 +1,9 @@
 ---
 title: "Self-orthogonalizing attractor neural networks emerging from the free energy principle"
 exports:
-  - format: docx
-    output: autoconvert-attractor-math-manuscript.docx
-  - format: pdf
-    output: autoconvert-attractor-math-manuscript.pdf
-  - format: tex
+  - format: tex+pdf
     template: arxiv_nips
-    output: latex/autoconvert-attractor-math-manuscript
+    output: latex/fep-ann-manuscript
 
 abbreviations:
   FEP: Free Energy Principle
@@ -394,7 +390,7 @@ Simulation results from training the network on a single, handwritten example fo
 :::
 
 ## Simulation 3: demonstration of sequence learning capabilities
-In [](05-simulation-digits-continuous-sequence.ipynb), we demonstrate the sequence learning capabilities of the proposed architecture. We trained the network on a sequence of 3 handwritten digits (1,2,3), with a fixed order of presentation (1→2→3→1→2→3→...), for 2000 epochs, each epoch consisting of a single step ([](#fig-sequence-attractors)A). This rapid presentation of the input sequence forced the network to model the current attractor from the network's response to the previous pattern, i.e. to establish sequence attractors. The inverse temperature was set to 1 and the learning rate to 0.001 (in a supplementary analysis, we saw a considerable robustness of our results to the choice of these parameters). As shown on [](#fig-sequence-attractors)B, this training approach led to an asymmetric coupling matrix (it was very close to symmetric in all previous simulations). Based on eq.-s [](#antisymmetric-coupling) and [](#hopfield-joint), we decomposed the coupling matrix into a symmetric and antisymmetric part ([](#fig-sequence-attractors)C and D). Retrieving the fixed-point attractors for the symmetric component of the coupling matrix, we obtained three attractors, corresponding to the three digits ([](#fig-sequence-attractors)C and E). The antisymmetric component of the coupling matrix, on the other hand, was encoding the sequence dynamics. Indeed, letting the network freely run (with zero bias) resulted in a spontaneously emerging sequence of variations of the digits 1→2→3→1→2→3→1→..., reflecting the original training order ([](#fig-sequence-attractors)F). This illustrates that the proposed framework is capable of producing and handling asymmetric couplings, and thereby learn sequences.
+In [](05-simulation-digits-continuous-sequence.ipynb), we demonstrate the sequence learning capabilities of the proposed architecture. We trained the network on a sequence of 3 handwritten digits (1,2,3), with a fixed order of presentation ($1→2→3→1→2→3→...$), for 2000 epochs, each epoch consisting of a single step ([](#fig-sequence-attractors)A). This rapid presentation of the input sequence forced the network to model the current attractor from the network's response to the previous pattern, i.e. to establish sequence attractors. The inverse temperature was set to 1 and the learning rate to 0.001 (in a supplementary analysis, we saw a considerable robustness of our results to the choice of these parameters). As shown on [](#fig-sequence-attractors)B, this training approach led to an asymmetric coupling matrix (it was very close to symmetric in all previous simulations). Based on eq.-s [](#antisymmetric-coupling) and [](#hopfield-joint), we decomposed the coupling matrix into a symmetric and antisymmetric part ([](#fig-sequence-attractors)C and D). Retrieving the fixed-point attractors for the symmetric component of the coupling matrix, we obtained three attractors, corresponding to the three digits ([](#fig-sequence-attractors)C and E). The antisymmetric component of the coupling matrix, on the other hand, was encoding the sequence dynamics. Indeed, letting the network freely run (with zero bias) resulted in a spontaneously emerging sequence of variations of the digits $1→2→3→1→2→3→1→...$, reflecting the original training order ([](#fig-sequence-attractors)F). This illustrates that the proposed framework is capable of producing and handling asymmetric couplings, and thereby learn sequences.
 
 :::{figure} fig/sequence-attractors.png
 :name: fig-sequence-attractors
