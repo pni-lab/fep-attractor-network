@@ -259,6 +259,21 @@ def rebuttal_remove_section_numbers_keywords_author(tex: str) -> str:
     return tex
 
 
+def appendix_remove_author(tex: str) -> str:
+    """Remove author list and author from PDF metadata; disable section numbering in appendix .tex."""
+    # 1) Replace \author{...} with \author{}
+    author_start = tex.find("\\author{")
+    if author_start != -1:
+        _, end = _strip_balanced_brace_block(tex, author_start, author_start + 7)
+        tex = tex[: author_start] + "\\author{}" + tex[end:]
+    # 2) Remove pdfauthor from \hypersetup
+    tex = re.sub(r"pdfauthor=\{\\@author\},\s*\n?", "", tex)
+    # 3) Unnumbered sections
+    if "\\setcounter{secnumdepth}{-1}" not in tex:
+        tex = tex.replace("\\begin{document}", "\\setcounter{secnumdepth}{-1}\n\\begin{document}", 1)
+    return tex
+
+
 def get_frontmatter_text(source: Path) -> str:
     if source.suffix.lower() == ".ipynb":
         nb = json.loads(source.read_text(encoding="utf-8"))
@@ -383,6 +398,8 @@ def build_one(source: Path) -> None:
         fixed = add_line_numbers_for_tracked(fixed)
     if source.name == "rebuttal_letter.md":
         fixed = rebuttal_remove_section_numbers_keywords_author(fixed)
+    if source.name == "02-appendix.ipynb":
+        fixed = appendix_remove_author(fixed)
     tex_path.write_text(fixed, encoding="utf-8")
 
     tex_dir = tex_path.parent
